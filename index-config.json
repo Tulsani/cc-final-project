@@ -1,0 +1,15 @@
+{
+  "contentsDeltaUri": "gs://project-9490e05d-c582-4118-a67-vector-search/index-data",
+  "config": {
+    "dimensions": 768,
+    "approximateNeighborsCount": 150,
+    "distanceMeasureType": "DOT_PRODUCT_DISTANCE",
+    "featureNormType": "UNIT_L2_NORM",
+    "algorithmConfig": {
+      "treeAhConfig": {
+        "leafNodeEmbeddingCount": 500,
+        "leafNodesToSearchPercent": 7
+      }
+    }
+  }
+}
