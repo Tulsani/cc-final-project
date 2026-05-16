@@ -1,0 +1,18 @@
+{
+  "name": "p2p-peer-service",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@chainsafe/libp2p-gossipsub": "^14.0.0",
+    "@chainsafe/libp2p-noise": "^16.0.0",
+    "@chainsafe/libp2p-yamux": "^7.0.0",
+    "@libp2p/identify": "^3.0.0",
+    "@libp2p/websockets": "^9.0.0",
+    "@multiformats/multiaddr": "^12.0.0",
+    "libp2p": "^2.0.0"
+  }
+}
