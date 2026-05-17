@@ -1,0 +1,321 @@
+<main class="library-shell">
+  <aside class="context-panel">
+    <div class="brand">
+      <div class="brand-mark">K</div>
+      <div>
+        <h1>{{ appTitle }}</h1>
+        <p>Browse S3-backed uploads by DynamoDB folder metadata.</p>
+      </div>
+    </div>
+
+    <section class="control-section">
+      <h2>Workspace</h2>
+      <label>
+        <span>Client ID</span>
+        <input [(ngModel)]="clientId" type="text" autocomplete="off">
+      </label>
+      <label>
+        <span>User ID</span>
+        <input [(ngModel)]="userId" type="text" autocomplete="off">
+      </label>
+      <label>
+        <span>Uploaded by</span>
+        <input [(ngModel)]="uploadedBy" type="text" autocomplete="off">
+      </label>
+      <label>
+        <span>Banker ID</span>
+        <input [(ngModel)]="bankerId" type="text" autocomplete="off">
+      </label>
+      <label>
+        <span>Prospect ID</span>
+        <input [(ngModel)]="prospectId" type="text" autocomplete="off">
+      </label>
+      <button class="primary" type="button" (click)="refreshContext()" title="Refresh library">
+        <span aria-hidden="true">↻</span>
+        Refresh
+      </button>
+    </section>
+
+    <section class="control-section">
+      <h2>Upload</h2>
+      <label>
+        <span>Target folder</span>
+        <input [(ngModel)]="upload.parentFolder" type="text" placeholder="deals/2024/q2">
+      </label>
+      <div class="two-up">
+        <label>
+          <span>File type</span>
+          <input [(ngModel)]="upload.fileType" type="text">
+        </label>
+        <label>
+          <span>Sub type</span>
+          <input [(ngModel)]="upload.fileSubType" type="text">
+        </label>
+      </div>
+      <div class="two-up">
+        <label>
+          <span>Doc type</span>
+          <input [(ngModel)]="upload.docType" type="text">
+        </label>
+        <label>
+          <span>Stage</span>
+          <input [(ngModel)]="upload.stage" type="text">
+        </label>
+      </div>
+      <label>
+        <span>Description</span>
+        <textarea [(ngModel)]="upload.description" rows="2"></textarea>
+      </label>
+      <label>
+        <span>Tags</span>
+        <textarea [(ngModel)]="rawTags" rows="3" spellcheck="false"></textarea>
+      </label>
+      <label class="toggle-row">
+        <input [(ngModel)]="upload.linked" type="checkbox">
+        <span>Linked document</span>
+      </label>
+      <label class="file-picker">
+        <input type="file" (change)="onFileSelected($event)">
+        <span aria-hidden="true">⇧</span>
+        <strong>{{ uploadFileRef?.name || 'Choose file' }}</strong>
+      </label>
+      <button class="primary" type="button" (click)="uploadSelectedFile()" [disabled]="state === 'uploading'">
+        <span aria-hidden="true">↑</span>
+        {{ state === 'uploading' ? 'Uploading...' : 'Upload document' }}
+      </button>
+    </section>
+  </aside>
+
+  <section class="main-panel">
+    <header class="toolbar">
+      <div>
+        <div class="eyebrow">Current Folder</div>
+        <div class="folder-path">{{ currentFolder || 'root' }}</div>
+      </div>
+      <div class="toolbar-actions">
+        <input [(ngModel)]="folderInput" type="text" placeholder="folder/path">
+        <button type="button" (click)="openFolder(folderInput)" title="Open folder">
+          <span aria-hidden="true">↳</span>
+        </button>
+      </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <button *ngFor="let crumb of breadcrumbs" type="button" (click)="openFolder(crumb.path)">
+        {{ crumb.name }}
+      </button>
+    </nav>
+
+    <div class="filters">
+      <label>
+        <span>Search</span>
+        <input [(ngModel)]="search" type="search" placeholder="name, type, tag">
+      </label>
+      <label>
+        <span>Status</span>
+        <select [(ngModel)]="status">
+          <option value="">All</option>
+          <option value="PENDING">Pending</option>
+          <option value="COMPLETE">Complete</option>
+        </select>
+      </label>
+      <button type="button" (click)="loadFolder()" title="Apply filters">
+        <span aria-hidden="true">⌕</span>
+      </button>
+      <div class="new-folder">
+        <input [(ngModel)]="newFolderName" type="text" placeholder="new-folder">
+        <button type="button" (click)="createVirtualFolder()" title="Create folder path">
+          <span aria-hidden="true">＋</span>
+        </button>
+      </div>
+    </div>
+
+    <p *ngIf="error" class="alert error">{{ error }}</p>
+    <p *ngIf="notice" class="alert notice">{{ notice }}</p>
+    <p *ngIf="scanNote" class="alert warning">{{ scanNote }}</p>
+
+    <section class="search-panel" aria-label="Document search">
+      <div class="search-header">
+        <div>
+          <div class="eyebrow">Document Search</div>
+          <h2>{{ searchMode === 'short' ? 'Fast answer' : 'Thinking answer' }}</h2>
+        </div>
+        <div class="mode-toggle" role="group" aria-label="Search mode">
+          <button type="button" [class.active]="searchMode === 'short'" (click)="searchMode = 'short'">
+            Short
+          </button>
+          <button type="button" [class.active]="searchMode === 'long'" (click)="searchMode = 'long'">
+            Long
+          </button>
+        </div>
+      </div>
+
+      <div class="search-grid">
+        <label class="question-field">
+          <span>Question</span>
+          <textarea [(ngModel)]="documentQuestion" rows="3"></textarea>
+        </label>
+
+        <div class="search-options">
+          <label *ngIf="searchMode === 'short'">
+            <span>Top K</span>
+            <input [(ngModel)]="searchTopK" type="number" min="1" max="20">
+          </label>
+          <label *ngIf="searchMode === 'short'">
+            <span>Bearer token</span>
+            <input [(ngModel)]="shortSearchToken" type="password" autocomplete="off">
+          </label>
+          <div *ngIf="searchMode === 'long'" class="thinking-copy">
+            <strong>{{ searchState === 'thinking' ? 'Thinking...' : 'Long search' }}</strong>
+            <span>{{ longTaskId || 'Creates a task and polls until the final answer is ready.' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <label class="filters-json">
+        <span>{{ searchMode === 'short' ? 'Filters JSON' : 'Variables JSON' }}</span>
+        <textarea [(ngModel)]="searchFiltersJson" rows="4" spellcheck="false"></textarea>
+      </label>
+
+      <div class="search-actions">
+        <button class="primary search-run" type="button" (click)="runDocumentSearch()" [disabled]="searchState === 'searching' || searchState === 'thinking'">
+          <span aria-hidden="true">{{ searchMode === 'short' ? '⌕' : '⋯' }}</span>
+          {{ searchState === 'searching' ? 'Searching...' : searchState === 'thinking' ? 'Thinking...' : 'Run search' }}
+        </button>
+        <button type="button" (click)="applyCurrentFolderFilter()">Use folder</button>
+        <button type="button" (click)="applySelectedFileFilter()">Use selected file</button>
+      </div>
+
+      <p *ngIf="searchError" class="alert error">{{ searchError }}</p>
+
+      <div *ngIf="searchAnswer" class="answer-box">
+        <div class="answer-meta">
+          <span *ngIf="searchMode === 'short'">{{ searchResults.length }} chunks</span>
+          <span *ngIf="searchMode === 'long'">Task {{ longTaskStatus || 'done' }}</span>
+          <span *ngIf="longTaskPeerCount">Peers {{ longTaskPeerCount }}</span>
+        </div>
+        <pre>{{ searchAnswer }}</pre>
+      </div>
+
+      <div *ngIf="searchMode === 'short' && searchResults.length" class="chunk-results">
+        <button
+          *ngFor="let result of searchResults"
+          type="button"
+          class="chunk-row"
+          (click)="viewSearchResult(result.fileId)"
+          title="Open source file when metadata is available"
+        >
+          <span class="rank">#{{ result.rank }}</span>
+          <span>
+            <strong>{{ result.fileId || 'Unknown file' }}</strong>
+            <small>Chunk {{ result.chunkIndex + 1 }} of {{ result.totalChunks }} · score {{ result.score | number:'1.2-3' }}</small>
+          </span>
+          <span class="chunk-text">{{ result.text }}</span>
+        </button>
+      </div>
+
+      <div *ngIf="searchMode === 'long' && longTaskSections.length" class="peer-sections">
+        <div *ngFor="let section of longTaskSections" class="peer-section">
+          <strong>Peer {{ section.peerIndex + 1 }}</strong>
+          <span>{{ section.took_ms }} ms</span>
+          <p>{{ section.answer }}</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="workspace">
+      <section class="browser" aria-label="Document browser">
+        <div class="section-heading">
+          <h2>Folders</h2>
+          <span>{{ folders.length }}</span>
+        </div>
+        <div class="folder-grid" *ngIf="folders.length; else emptyFolders">
+          <button *ngFor="let folder of folders" class="folder-tile" type="button" (click)="openFolder(folder.path)">
+            <span aria-hidden="true">▣</span>
+            <strong>{{ folder.name }}</strong>
+            <small>{{ folder.fileCount }} files below</small>
+          </button>
+        </div>
+        <ng-template #emptyFolders>
+          <div class="empty-state">No child folders here.</div>
+        </ng-template>
+
+        <div class="section-heading files-heading">
+          <h2>Files</h2>
+          <span>{{ files.length }}</span>
+        </div>
+        <div class="file-table" *ngIf="files.length; else emptyFiles">
+          <button
+            *ngFor="let file of files"
+            class="file-row"
+            type="button"
+            [class.selected]="selectedFile?.fileId === file.fileId"
+            (click)="viewFile(file)"
+          >
+            <span class="file-icon" aria-hidden="true">□</span>
+            <span class="file-name">{{ file.fileName }}</span>
+            <span>{{ file.fileType || 'file' }}</span>
+            <span>{{ file.uploadStatus || 'UNKNOWN' }}</span>
+            <span>{{ formatBytes(file.fileSize) }}</span>
+            <span>{{ formatDate(file.createdAt) }}</span>
+          </button>
+        </div>
+        <ng-template #emptyFiles>
+          <div class="empty-state">No files in this folder yet.</div>
+        </ng-template>
+      </section>
+
+      <section class="preview" aria-label="Document preview">
+        <div class="preview-header">
+          <div>
+            <h2>{{ selectedFile?.fileName || 'Select a document' }}</h2>
+            <p>{{ selectedFile?.description || 'The viewer will load a presigned S3 URL.' }}</p>
+          </div>
+          <a *ngIf="selectedViewUrl" class="open-link" [href]="selectedViewUrl" target="_blank" rel="noreferrer">
+            Open
+          </a>
+        </div>
+
+        <div class="preview-frame" *ngIf="selectedFile; else noSelection">
+          <iframe
+            *ngIf="trustedViewUrl && canPreviewSelected(); else downloadOnly"
+            [src]="trustedViewUrl"
+            title="Document preview"
+          ></iframe>
+          <ng-template #downloadOnly>
+            <div class="empty-state">
+              This file type may need to open in a new tab.
+            </div>
+          </ng-template>
+        </div>
+        <ng-template #noSelection>
+          <div class="preview-frame">
+            <div class="empty-state">Choose a file from the list to preview it.</div>
+          </div>
+        </ng-template>
+
+        <dl *ngIf="selectedFile" class="metadata-list">
+          <div>
+            <dt>Folder</dt>
+            <dd>{{ selectedFile.parentFolder || 'root' }}</dd>
+          </div>
+          <div>
+            <dt>File ID</dt>
+            <dd>{{ selectedFile.fileId }}</dd>
+          </div>
+          <div>
+            <dt>S3 key</dt>
+            <dd>{{ selectedFile.s3Key }}</dd>
+          </div>
+          <div>
+            <dt>Tags</dt>
+            <dd>
+              <span *ngFor="let tag of selectedFile.tags" class="tag">{{ tag.key }}={{ tag.value }}</span>
+              <span *ngIf="!selectedFile.tags.length">None</span>
+            </dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+  </section>
+</main>

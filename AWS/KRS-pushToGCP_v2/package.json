@@ -1,0 +1,13 @@
+{
+    "name": "sqs-pubsub-bridge",
+    "version": "1.0.0",
+    "description": "Forwards SQS chunk messages to GCP Pub/Sub via Workload Identity Federation",
+    "type": "module",
+    "main": "src/handler.js",
+    "scripts": {
+      "package": "zip -r bridge.zip src/ package.json node_modules/"
+    },
+    "dependencies": {
+      "@aws-sdk/client-sts": "^3.600.0"
+    }
+  }

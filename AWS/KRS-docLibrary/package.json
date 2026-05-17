@@ -1,0 +1,16 @@
+{
+  "name": "krs-doc-library-lambda",
+  "version": "1.0.0",
+  "description": "Simple document library browser for uploaded KRS documents",
+  "type": "module",
+  "main": "index.mjs",
+  "scripts": {
+    "package": "zip -r function.zip index.mjs package.json"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/client-s3": "^3.600.0",
+    "@aws-sdk/s3-request-presigner": "^3.600.0",
+    "@aws-sdk/util-dynamodb": "^3.600.0"
+  }
+}
