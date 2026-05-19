@@ -18,4 +18,4 @@ peer mesh collaboratively executes long-form reasoning workflows while
 interacting with the GCP retrieval layer. The architecture demonstrates
 how modern managed PaaS services across multiple cloud providers can
 be orchestrated to build scalable enterprise AI systems while preserving
-logical data separation, modularity, and operational scalability.**
+logical data separation, modularity, and operational scalability.
