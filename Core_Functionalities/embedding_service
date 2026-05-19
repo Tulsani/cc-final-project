@@ -1,0 +1,29 @@
+import vertexai
+from vertexai.language_models import TextEmbeddingModel
+
+# Initialize Vertex AI
+vertexai.init(
+    project="ekrs-rag-system",
+    location="us-central1"
+)
+
+# Load embedding model
+model = TextEmbeddingModel.from_pretrained(
+    "text-embedding-005"
+)
+
+def generate_embedding(text):
+
+    embeddings = model.get_embeddings([text])
+
+    return embeddings[0].values
+
+
+if __name__ == "__main__":
+
+    sample_text = "Enterprise contract agreement"
+
+    embedding = generate_embedding(sample_text)
+
+    print(f"Embedding length: {len(embedding)}")
+    print(embedding[:10])
