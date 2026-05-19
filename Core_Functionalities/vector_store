@@ -1,0 +1,44 @@
+import chromadb
+from chromadb.config import Settings
+
+from embedding_service import generate_embedding
+
+# Create ChromaDB client
+client = chromadb.Client(
+    Settings(anonymized_telemetry=False)
+)
+
+# Create collection
+collection = client.get_or_create_collection(
+    name="enterprise_documents"
+)
+
+# Sample enterprise document
+document_text = """
+Enterprise legal contract regarding financial agreements
+between multiple international clients.
+"""
+
+# Generate REAL embedding using Vertex AI
+embedding = generate_embedding(document_text)
+
+# Store document
+collection.add(
+    documents=[document_text],
+    ids=["doc1"],
+    embeddings=[embedding]
+)
+
+# User semantic query
+query = "financial contract"
+
+# Generate query embedding
+query_embedding = generate_embedding(query)
+
+# Query vector database
+results = collection.query(
+    query_embeddings=[query_embedding],
+    n_results=1
+)
+
+print(results)
